@@ -2,11 +2,11 @@
 #set -x
 
 PHANTOM="sphere"
-ROOT=/home/larsonke/Code/SBL-Thickness ## This should be the path to the cloned repository
-cd $ROOT/Sphere-Examples
+WDIR=/home/larsonke/Code/SBL-Thickness/Sphere-Example ## This should match the path to the cloned repository
+
 
 # Executables (compiled from src)
-EXE_DIR=$ROOT/bin
+EXE_DIR=$WDIR/../bin
 decimateMesh=${EXE_DIR}/decimateMesh
 getMeshEdgeLengths=${EXE_DIR}/getMeshEdgeLengths
 integrateFieldLines=${EXE_DIR}/integrateFieldLines
@@ -16,25 +16,23 @@ spmesh2voroInput=${EXE_DIR}/spmesh2voroInput
 surface2spmeshInput=${EXE_DIR}/surface2spmeshInput
 
 # Executables from outside sources
-EXT_DIR=$ROOT/external
+EXT_DIR=$WDIR/../external
 spmesh=${EXT_DIR}/spmesh
 voro=${EXT_DIR}/voro++
 
 # Set up directories
-WDIR=$ROOT/Examples/Phantom_${PHANTOM}
 ANNULUS_DIR=$WDIR/Annulus-Mesh-Files
 SPMESH_DIR=$WDIR/SPMESH-Files
-THICKNESS_DIR=$WDIR/Thickness
-mkdir -p $WDIR $ANNULUS_DIR $THICKNESS_DIR $SPMESH_DIR
+SURFACE_DIR=$WDIR/Surface-Files
+mkdir -p $WDIR $ANNULUS_DIR $SURFACE_DIR $SPMESH_DIR
 
 
 ########################
 surfaceOuter_base=${PHANTOM}_outer
 surfaceInner_base=${PHANTOM}_inner
 
-DATA_DIR=$ROOT/Examples/SampleData
-surfaceOuter=${DATA_DIR}/${surfaceOuter_base}.vtp
-surfaceInner=${DATA_DIR}/${surfaceInner_base}.vtp
+surfaceOuter=${SURFACE_DIR}/${surfaceOuter_base}.vtp
+surfaceInner=${SURFACE_DIR}/${surfaceInner_base}.vtp
 
 if [ ! -f $surfaceOuter ] || [ ! -f $surfaceInner ] ; then
     "Cannot find input surfaces! exiting..."
@@ -99,7 +97,7 @@ $laplacianSolver $spmeshOutputUGrid $annulus $surfaceOuter $surfaceInner ${voron
 
 # Integrate thickness
 echo "Integrating thickness..."
-surfaceOuter_thickness=$THICKNESS_DIR/${surfaceOuter_base}_thickness.vtp
+surfaceOuter_thickness=$SURFACE_DIR/${surfaceOuter_base}_thickness.vtp
 step_size=0.5
 direction=1 # integration from outer-->inner (-1 for inner-->outer)
 
