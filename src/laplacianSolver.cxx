@@ -284,7 +284,6 @@ int main(int argc, char * argv[]) {
 
 
   // Read Voronoi diagram file
-  std::cout << "Reading Voronoi diagram" << std::endl;
   std::fstream voronoiFile(voronoiFileName.c_str());
   std::string line;
   arma::field<arma::ivec> adjacentPts_voro(nUGridPts);
@@ -344,8 +343,7 @@ int main(int argc, char * argv[]) {
 
   /* Build FDM polydata
      - Get neighbors from Voro and compare to SPMESH
-   */
-  std::cout << "Building finite volume model" << std::endl;
+  */
 
   // Set points based on SPMESH
   vtkSmartPointer<vtkUnstructuredGrid> FDMuGrid = vtkSmartPointer<vtkUnstructuredGrid>::New();
@@ -456,98 +454,10 @@ int main(int argc, char * argv[]) {
 
   
 
-  /* Solve Laplacian over the FDM mesh
+  /* Solve for gradient of Laplacian equation over the FDM mesh
      - Using methods from (Sukumar and Bolander, 2003)
-     - Jacobian method (for now)
-  */
-  std::cout << "Solving Laplacian" << std::endl;
-
-  // Set up solver
-  arma::vec U0(nUGridPts), U1(nUGridPts);
-
-  for(unsigned int p = 0; p < nUGridPts; p++) {
-    // Boundary label?
-    unsigned int label = boundaryLabels->GetValue(p);
-    if(label == 1) {
-      U0(p) = 100;
-    } else if(label == 2) {
-      U0(p) = 0;
-    } else if(label==0) {
-      U0(p) = 50;
-    } else {
-      std::cout << "huhh????" << std::endl;
-    }
-  }
-  U1 = U0;
-
-
-  // Solve
-  unsigned int it = 0;
-  float L_inf = 1, tol = 0.001;
-
-  while(L_inf > tol) {
-    for(unsigned int p = 0; p < nUGridPts; p++) {
-      if(boundaryLabels->GetValue(p) == 0) {
-	arma::ivec adjacentPts_p = adjacentPts(p);
-	arma::vec distances_p = distances(p);
-	arma::vec vFaceAreas_p = vFaceAreas(p);
-
-	float alphaI = 0;
-	for(unsigned int n = 0; n < adjacentPts_p.n_elem; n++) {
-	  alphaI += vFaceAreas_p(n) / distances_p(n);
-	}
-	float sum_alphaIJ_uIJ = 0;
-	for(unsigned int n = 0; n < adjacentPts_p.n_elem; n++) {
-	  unsigned int q = adjacentPts_p(n);
-	  sum_alphaIJ_uIJ += vFaceAreas_p(n) * U0(q) / distances_p(n);
-	}
-	U1(p) = sum_alphaIJ_uIJ / alphaI;
-      }
-    }
-    arma::vec diff = arma::abs(U1 - U0);
-    L_inf = diff.max();
-    U0 = U1;
-    it++;
-  }
-  std::cout << it << " " << L_inf << std::endl;
-
-
-  // Set Laplacian solution as scalar array
-  std::string laplacianSolutionArrayName = "Laplacian solution";
-  vtkSmartPointer<vtkFloatArray> laplacianSolution = vtkSmartPointer<vtkFloatArray>::New();
-  laplacianSolution->SetNumberOfComponents(1);
-  laplacianSolution->SetNumberOfTuples(nUGridPts);
-  laplacianSolution->SetName(laplacianSolutionArrayName.c_str());
-
-  for(unsigned int p = 0; p < nUGridPts; p++) {
-    unsigned int label = boundaryLabels->GetValue(p);
-    if(label==1 && U1(p) != 100) {
-      U1(p) = 100;
-      laplacianSolution->SetValue(p,U1(p));
-    }
-    else if(label==2 && U1(p) != 0) {
-      U1(p) = 0;
-      laplacianSolution->SetValue(p,U1(p));
-    }
-    else if(label==0 && !(U1(p) >= 0) && !(U1(p) <= 100)) {
-      double p0[nDims];
-      FDMuGrid->GetPoint(p,p0);
-      U1(p) = manualInterpolation(FDMuGrid,p,4,U1);
-    }
-    laplacianSolution->SetValue(p,U1(p));
-  }
-
-  FDMuGrid->GetPointData()->AddArray(laplacianSolution);
-  FDMuGrid->BuildLinks();
-
-
-  
-  // Calculate gradients
-  /* Measure length of streamlines through calculated field
      - Calculate derivative at each point by estimated a local uniform grid
-     - Start at one surface and iterate along gradient
   */
-  std::cout << "Calculating gradient" << std::endl;
 
   // Initialize gradient
   arma::mat UGradient0(nUGridPts,nDims,arma::fill::zeros), UGradient1(nUGridPts,nDims,arma::fill::zeros);
@@ -621,9 +531,9 @@ int main(int argc, char * argv[]) {
 
 
   // Iteratively solve for the gradient
-  it = 0;
-  L_inf = 1;
-  tol = 0.001;
+  unsigned int it = 0;
+  float L_inf = 1, tol = 0.001;
+  
   while(L_inf > tol && it < 100) {
     for(unsigned int p = 0; p < nUGridPts; p++) {
       if(boundaryLabels->GetValue(p) == 0) {

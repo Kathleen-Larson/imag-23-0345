@@ -275,7 +275,7 @@ int main(int argc, char * argv[]) {
 
   // Parse inputs
   if(argc < 7) {
-    std::cout << "Usage: FDMmeshFileName inputSurfaceOuterFileName inputSurfaceInnerFileName outputSurfaceFileName stepSize thicknessArrayName direction(1: out->in, -1:in->out) boundsArrayName bounds(must be in pairs of lower/upper bounds)" << std::endl;
+    std::cout << "Usage: FDMmeshFileName inputSurfaceOuterFileName inputSurfaceInnerFileName outputSurfaceFileName stepSize integrationDirection(1: out->in, -1:in->out) boundsArrayName bounds(must be in pairs of lower/upper bounds)" << std::endl;
     return -1;
   }
   
@@ -284,9 +284,9 @@ int main(int argc, char * argv[]) {
   std::string inputSurfaceInnerFileName = argv[3];
   std::string outputSurfaceFileName = argv[4];
   float stepSize = -1*atof(argv[5]);
-  std::string laplacianThicknessArrayName = argv[6];
-  int integrationDirection = atoi(argv[7]);
-  int argc_boundsInfoStart = 8;
+  int integrationDirection = atoi(argv[6]);
+  int argc_boundsInfoStart = 7;
+
   
 
   // Read data
@@ -318,12 +318,11 @@ int main(int argc, char * argv[]) {
   unsigned int outputSurface_nPts = outputSurface->GetPoints()->GetNumberOfPoints();
 
   vtkSmartPointer<vtkFloatArray> boundsArray = vtkSmartPointer<vtkFloatArray>::New();
-  unsigned int nBounds = argc - (argc_boundsInfoStart + 1);
+  unsigned int nBounds = argc - (argc_boundsInfoStart);
 
   bool isBounds;
   std::vector<int> bounds;
   if(nBounds == 0) {
-    std::cout << "No bounds provided... calculating thickness over entire domain" << std::endl;
     isBounds = false;
     bounds.clear();
   }
@@ -386,15 +385,16 @@ int main(int argc, char * argv[]) {
   
 
   // Initialize label arrays
+  std::string thickness_array_name = "SBL-Thickness";
   std::string completed_array_name = "Completed";
-  vtkSmartPointer<vtkFloatArray> laplacianThickness_array = vtkFloatArray::SafeDownCast(surfaceStart->GetPointData()->GetArray(laplacianThicknessArrayName.c_str()));
+  vtkSmartPointer<vtkFloatArray> laplacianThickness_array = vtkFloatArray::SafeDownCast(surfaceStart->GetPointData()->GetArray(thickness_array_name.c_str()));
   vtkSmartPointer<vtkFloatArray> completed_array = vtkFloatArray::SafeDownCast(surfaceStart->GetPointData()->GetArray(completed_array_name.c_str()));
     
   if(!laplacianThickness_array || !completed_array) {
     laplacianThickness_array = vtkSmartPointer<vtkFloatArray>::New();
     laplacianThickness_array->SetNumberOfComponents(1);
     laplacianThickness_array->SetNumberOfValues(surfaceStart_nPts);
-    laplacianThickness_array->SetName(laplacianThicknessArrayName.c_str());
+    laplacianThickness_array->SetName(thickness_array_name.c_str());
 
     completed_array = vtkSmartPointer<vtkFloatArray>::New();
     completed_array->SetNumberOfComponents(1);
