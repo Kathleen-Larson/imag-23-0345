@@ -12,13 +12,10 @@ getMeshEdgeLengths=${EXE_DIR}/getMeshEdgeLengths
 integrateFieldLines=${EXE_DIR}/integrateFieldLines
 laplacianSolver=${EXE_DIR}/laplacianSolver
 makeAnnulus=${EXE_DIR}/makeAnnulus
+spmesh=${EXE_DIR}/spmesh
 spmesh2voroInput=${EXE_DIR}/spmesh2voroInput
 surface2spmeshInput=${EXE_DIR}/surface2spmeshInput
-
-# Executables from outside sources
-EXT_DIR=$WDIR/../external
-spmesh=${EXT_DIR}/spmesh
-voro=${EXT_DIR}/voro++
+voro= ##<path to locally compiled voro++ executable>
 
 # Set up directories
 ANNULUS_DIR=$WDIR/Annulus-Mesh-Files
